@@ -21,7 +21,6 @@ def validate(file)
   return puts "Valid!" if results.errors.empty?
 
   results.errors.each { |err| puts err.to_s }
-  exit 1
 end
 
 validate "index.html"
