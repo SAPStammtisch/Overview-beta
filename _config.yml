@@ -1,5 +1,3 @@
 title: SAP Stammtisch Overview
 description: Infos and Dates of SAP Stammtisch events
-show_downloads: true
-google_analytics:
-theme: jekyll-theme-leap-day
+theme: jekyll-theme-dinky
