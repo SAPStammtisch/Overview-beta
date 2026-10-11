@@ -2,203 +2,255 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>SAP Stammtisch Locator</title>
+    <title>SAP Stammtisch | Global Community</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/topojson@3"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css"/>
+    
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;500;700&display=swap');
+
         :root {
-            --warm-yellow: #FFD700;
-            --charcoal: #222222;
-            --page-bg: #fdfaf0; /* Warm paper light mode */
-            --tile-bg: #ffffff;
+            --sap-yellow: #FFD700;
+            --sap-black: #000000;
+            --off-white: #FBFBFB;
+            --map-gray: #EAEAEA;
         }
 
         body { 
-            font-family: 'Segoe UI', Tahoma, sans-serif; 
-            background: var(--page-bg); 
-            color: var(--charcoal);
-            margin: 0; padding-bottom: 50px;
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--off-white); 
+            color: var(--sap-black);
+            margin: 0; padding-bottom: 100px;
+            scroll-behavior: smooth;
         }
 
-        header { 
-            padding: 50px 20px 20px 20px; 
-            text-align: center; 
-            max-width: 900px;
-            margin: auto;
-        }
-
-        header h1 { font-size: 3rem; margin-bottom: 10px; color: var(--charcoal); border-bottom: 8px solid var(--warm-yellow); display: inline-block; }
-
-        .intro-text {
-            background: var(--tile-bg);
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            line-height: 1.6;
-            margin: 20px auto 40px auto;
-            border: 1px solid #eee;
-            text-align: left;
-        }
-
-        .dashboard { 
-            display: flex; flex-direction: column; gap: 40px; 
-            padding: 20px; max-width: 1100px; margin: auto; 
-        }
-
-        .country-tile { 
-            background: var(--tile-bg); 
-            border-radius: 20px; 
-            display: flex; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            border: 1px solid #ddd;
-            overflow: hidden;
-            /* Height is set dynamically by JS */
-        }
-
-        .map-area { flex: 1.5; position: relative; background: #fafafa; }
+        header { padding: 60px 20px 20px; text-align: center; }
+        h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.5rem, 8vw, 4rem); text-transform: uppercase; letter-spacing: -2px; margin: 0; line-height: 1; }
+        .highlight-yellow { background: var(--sap-yellow); padding: 0 15px; display: inline-block; }
         
-        .side-panel { 
-            flex: 1; 
-            background: var(--charcoal); 
-            color: white;
-            display: flex; flex-direction: column;
-        }
-
-        .panel-header {
-            padding: 20px;
-            background: var(--warm-yellow);
-            color: var(--charcoal);
-            font-weight: 800;
-            font-size: 1.2rem;
+        /* Animated Stats Styling */
+        #dynamic-stats {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 500;
+            font-size: 1.4rem;
+            margin-top: 20px;
             text-transform: uppercase;
             letter-spacing: 1px;
+            color: var(--sap-black);
+        }
+        .stat-number {
+            font-weight: 1700;
+						font-size: 2.4rem;
+            color: var(--sap-black);
+            border-bottom: 3px solid var(--sap-yellow);
+            display: inline-block;
+            min-width: 1.5ch;
         }
 
-        .city-list { padding: 10px; }
-
-        .city-item { 
-            padding: 15px 20px; 
-            margin-bottom: 2px;
-            font-size: 1rem; 
-            cursor: pointer; 
-            transition: 0.2s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .intro-container {
+            max-width: 800px; margin: 30px auto; text-align: left;
+            border-left: 5px solid var(--sap-black); padding: 15px 40px;
+            background: white; box-shadow: 10px 10px 0px var(--sap-yellow);
         }
 
-        .city-item:hover { background: #333; color: var(--warm-yellow); }
-
-        /* Map SVG Styles */
-        .land { fill: #e0e0e0; stroke: #999; stroke-width: 0.5px; }
-        .dot { 
-            fill: var(--warm-yellow); stroke: #000; stroke-width: 1.5px; 
-            filter: drop-shadow(2px 4px 3px rgba(0,0,0,0.3)); 
-            cursor: pointer; transition: all 0.3s ease;
-        }
-        .dot.highlight { r: 12; fill: #fff; filter: drop-shadow(0px 0px 10px var(--warm-yellow)); }
-
-        .tooltip { 
-            position: absolute; padding: 12px; background: var(--charcoal); 
-            color: var(--warm-yellow); border-radius: 4px; pointer-events: none; 
-            font-size: 13px; font-weight: bold; z-index: 100;
+        .nav-lane {
+            position: sticky; top: 0; z-index: 1000;
+            background: white; border-bottom: 2px solid var(--sap-black);
+            padding: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
-        /* Shadow filter for Country Shape */
-        .country-shadow { filter: drop-shadow(10px 10px 15px rgba(0,0,0,0.15)); }
+        .country-btn {
+            background: var(--sap-black); color: white; border: 2px solid var(--sap-black);
+            padding: 12px 20px; cursor: pointer; border-radius: 4px;
+            font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+            transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center;
+            min-width: 140px;
+        }
+        .country-btn:hover { background: var(--sap-yellow); color: var(--sap-black); transform: translateY(-3px); box-shadow: 0 5px 0px var(--sap-black); }
+        .btn-label { display: flex; align-items: center; gap: 10px; font-size: 1rem; }
+        .btn-dots { display: flex; gap: 3px; margin-top: 6px; flex-wrap: wrap; justify-content: center; }
+        .dot-mini { width: 6px; height: 6px; background: var(--sap-yellow); border-radius: 50%; }
+        .country-btn:hover .dot-mini { background: var(--sap-black); }
+
+        .dashboard { display: flex; flex-direction: column; gap: 80px; padding: 20px; max-width: 1200px; margin: auto; }
+        .country-tile { display: flex; flex-wrap: wrap; background: white; border: 2px solid var(--sap-black); box-shadow: 15px 15px 0px rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden; }
+        .map-area { flex: 1.4; min-width: 350px; position: relative; background-image: radial-gradient(var(--map-gray) 1px, transparent 0); background-size: 24px 24px; }
+        .side-panel { flex: 1; min-width: 300px; background: var(--sap-black); color: white; display: flex; flex-direction: column; }
+        .panel-header { padding: 25px 30px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.4rem; background: var(--sap-yellow); color: var(--sap-black); text-transform: uppercase; }
+        .city-list { padding: 15px; }
+        .city-item { padding: 20px 25px; margin-bottom: 10px; cursor: pointer; border: 1px solid #222; transition: 0.3s; display: flex; flex-direction: column; gap: 4px; }
+        .city-name { font-size: 1.1rem; font-weight: 700; display: flex; justify-content: space-between; }
+        .city-details { font-size: 0.8rem; font-weight: 400; color: #888; }
+        .city-item:hover { background: var(--sap-yellow); color: var(--sap-black); transform: translateX(8px); }
+
+        .land { fill: #f9f9f9; stroke: var(--sap-black); stroke-width: 1.2px; }
+        .dot { fill: var(--sap-yellow); stroke: var(--sap-black); stroke-width: 2px; }
+        .dot.highlight { r: 14; fill: #fff; stroke-width: 3px; }
+        .tooltip { position: absolute; padding: 12px 18px; background: var(--sap-black); color: white; font-size: 13px; z-index: 1001; border-bottom: 4px solid var(--sap-yellow); }
+        .svg-shadow { filter: drop-shadow(20px 20px 0px rgba(0,0,0,0.06)); }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>SAP Stammtisch</h1>
-    <div class="intro-text">
-        An <strong>SAP Stammtisch</strong> is a casual, community-led meetup where SAP professionals, developers, consultants, and enthusiasts gather to network and share knowledge. Unlike formal conferences, these events focus on informal exchange over food and drinks—hence the name "Stammtisch" (a traditional regulars' table). It's the heartbeat of the SAP community, organized by the community, for the community.
+    <h1>SAP <span class="highlight-yellow">Stammtisch</span></h1>
+    <div id="dynamic-stats">
+        <span id="count-loc" class="stat-number">1</span> SAP Stammtisch Locations 
+        in <span id="count-country" class="stat-number">1</span> countries 
+        all over the world.
+    </div>
+    
+    <div class="intro-container">
+        <p>An <strong>SAP Stammtisch</strong> is a community-led meetup where professionals trade formal halls for local tables. No sales pitches—just pure knowledge sharing and networking over a drink.</p>
     </div>
 </header>
 
+<div class="nav-lane" id="navLane"></div>
 <div id="container" class="dashboard"></div>
 
 <script type="text/plain">
+function getIsoCode(country) {
+    const mapping = {
+        "Afghanistan": "af", "Albania": "al", "Algeria": "dz", "Andorra": "ad", "Angola": "ao",
+        "Argentina": "ar", "Armenia": "am", "Australia": "au", "Austria": "at", "Azerbaijan": "az",
+        "Bahamas": "bs", "Bahrain": "bh", "Bangladesh": "bd", "Barbados": "bb", "Belarus": "by",
+        "Belgium": "be", "Belize": "bz", "Benin": "bj", "Bhutan": "bt", "Bolivia": "bo",
+        "Bosnia and Herzegovina": "ba", "Botswana": "bw", "Brazil": "br", "Bulgaria": "bg",
+        "Cambodia": "kh", "Cameroon": "cm", "Canada": "ca", "Chile": "cl", "China": "cn",
+        "Colombia": "co", "Costa Rica": "cr", "Croatia": "hr", "Cuba": "cu", "Cyprus": "cy",
+        "Czech Republic": "cz", "Denmark": "dk", "Dominican Republic": "do", "Ecuador": "ec",
+        "Egypt": "eg", "Estonia": "ee", "Ethiopia": "et", "Finland": "fi", "France": "fr",
+        "Georgia": "ge", "Germany": "de", "Ghana": "gh", "Greece": "gr", "Guatemala": "gt",
+        "Honduras": "hn", "Hungary": "hu", "Iceland": "is", "India": "in", "Indonesia": "id",
+        "Iran": "ir", "Iraq": "iq", "Ireland": "ie", "Israel": "il", "Italy": "it",
+        "Jamaica": "jm", "Japan": "jp", "Jordan": "jo", "Kazakhstan": "kz", "Kenya": "ke",
+        "Korea, South": "kr", "Kuwait": "kw", "Latvia": "lv", "Lebanon": "lb", "Lithuania": "lt",
+        "Luxembourg": "lu", "Malaysia": "my", "Malta": "mt", "Mexico": "mx", "Monaco": "mc",
+        "Mongolia": "mn", "Morocco": "ma", "Netherlands": "nl", "New Zealand": "nz", "Nigeria": "ng",
+        "Norway": "no", "Pakistan": "pk", "Panama": "pa", "Paraguay": "py", "Peru": "pe",
+        "Philippines": "ph", "Poland": "pl", "Portugal": "pt", "Qatar": "qa", "Romania": "ro",
+        "Russia": "ru", "Saudi Arabia": "sa", "Senegal": "sn", "Serbia": "rs", "Singapore": "sg",
+        "Slovakia": "sk", "Slovenia": "si", "South Africa": "za", "Spain": "es", "Sri Lanka": "lk",
+        "Sweden": "se", "Switzerland": "ch", "Taiwan": "tw", "Thailand": "th", "Tunisia": "tn",
+        "Turkey": "tr", "Ukraine": "ua", "United Arab Emirates": "ae", "United Kingdom": "gb",
+        "USA": "us", "Uruguay": "uy", "Uzbekistan": "uz", "Venezuela": "ve", "Vietnam": "vn"
+    };
+
+    
+
+    return mapping[country] || "un";
+}
+
+// Function to animate numbers
+function animateValue(id, start, end, duration) {
+    const obj = d3.select(id);
+    obj.transition()
+       .duration(duration)
+       .tween("text", function() {
+           const i = d3.interpolateNumber(start, end);
+           return function(t) {
+               this.textContent = Math.floor(i(t));
+           };
+       });
+}
+
 const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
 
-// Load the local JSON file
 d3.json("location.json").then(data => {
-    const countryGroups = d3.group(data, d => d.country);
+    
+    const totalLocations = data.length;
+    const uniqueCountries = new Set(data.map(d => d.country)).size;
+
+    // Start the Count-up animation
+    animateValue("#count-loc", 1, totalLocations, 2500);
+    animateValue("#count-country", 1, uniqueCountries, 1200);
+
+    const countryGroups = Array.from(d3.group(data, d => d.country))
+        .sort((a, b) => b[1].length - a[1].length);
+
+    const navLane = d3.select("#navLane");
+    countryGroups.forEach(([country, cities]) => {
+        const btn = navLane.append("button")
+            .attr("class", "country-btn")
+            .on("click", () => {
+                const target = document.getElementById(`tile-${country}`);
+                window.scrollTo({ top: target.offsetTop - 120, behavior: 'smooth' });
+            });
+        
+        const label = btn.append("div").attr("class", "btn-label");
+        label.append("span").attr("class", `fi fi-${getIsoCode(country)}`);
+        label.append("span").text(`${country} (${cities.length})`);
+        
+        const dotsContainer = btn.append("div").attr("class", "btn-dots");
+        cities.forEach(() => dotsContainer.append("div").attr("class", "dot-mini"));
+    });
 
     d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(world => {
-        
-        countryGroups.forEach((cities, countryName) => {
-            // Sort North to South
+        countryGroups.forEach(([countryName, cities]) => {
             const sorted = [...cities].sort((a,b) => b.lat - a.lat);
-            
-            // Calculate height: ~60px per city + header padding
-            const dynamicHeight = Math.max(500, (sorted.length * 55) + 60);
+            const dynamicHeight = Math.max(600, (sorted.length * 92) + 120);
 
-            // Build UI
             const tile = d3.select("#container").append("div")
                 .attr("class", "country-tile")
-                .style("height", dynamicHeight + "px");
+                .attr("id", `tile-${countryName}`)
+                .style("height", window.innerWidth > 768 ? dynamicHeight + "px" : "auto");
 
             const mapArea = tile.append("div").attr("class", "map-area");
             const sidePanel = tile.append("div").attr("class", "side-panel");
 
-            sidePanel.append("div").attr("class", "panel-header").text(`📍 ${countryName}`);
+            sidePanel.append("div").attr("class", "panel-header").text(countryName);
             const listContainer = sidePanel.append("div").attr("class", "city-list");
 
-            // Map Logic
-            const width = 500, height = dynamicHeight;
+            const width = 600, height = dynamicHeight;
             const svg = mapArea.append("svg").attr("viewBox", `0 0 ${width} ${height}`).style("width", "100%").style("height", "100%");
-            
             const geo = topojson.feature(world, world.objects.countries).features.find(d => d.properties.name === countryName);
-            const projection = d3.geoMercator().fitSize([width - 80, height - 80], geo);
-            const path = d3.geoPath().projection(projection);
+            
+            if (geo) {
+                const projection = d3.geoMercator().fitSize([width - 100, height - 100], geo);
+                const path = d3.geoPath().projection(projection);
+                svg.append("path").datum(geo).attr("class", "land svg-shadow").attr("d", path);
 
-            // Draw shadow/land
-            svg.append("path").datum(geo).attr("class", "land country-shadow").attr("d", path);
+                svg.selectAll(".dot").data(cities).enter().append("circle")
+                    .attr("class", d => `dot dot-${d.id}`)
+                    .attr("cx", d => projection([d.lon, d.lat])[0])
+                    .attr("cy", d => projection([d.lon, d.lat])[1])
+                    .attr("r", 10)
+                    .on("mouseover", (event, d) => showDetail(event, d))
+                    .on("mouseout", hideDetail);
 
-            // Render Dots
-            svg.selectAll(".dot")
-                .data(cities).enter().append("circle")
-                .attr("class", d => `dot dot-${d.id}`)
-                .attr("cx", d => projection([d.lon, d.lat])[0])
-                .attr("cy", d => projection([d.lon, d.lat])[1])
-                .attr("r", 8)
-                .on("mouseover", (event, d) => showDetail(event, d))
-                .on("mouseout", hideDetail);
+                sorted.forEach(c => {
+                    const item = listContainer.append("div")
+                        .attr("class", `city-item item-${c.id}`)
+                        .on("mouseover", () => {
+                            svg.select(`.dot-${c.id}`).classed("highlight", true);
+                            const [x, y] = projection([c.lon, c.lat]);
+                            const mapRect = mapArea.node().getBoundingClientRect();
+                            showDetail({pageX: mapRect.left + x, pageY: mapRect.top + y}, c);
+                        })
+                        .on("mouseout", () => {
+                            svg.selectAll(".dot").classed("highlight", false);
+                            hideDetail();
+                        })
+                        .on("click", () => window.open(c.group, '_blank'));
 
-            // Render List Items
-            sorted.forEach(c => {
-                listContainer.append("div")
-                    .attr("class", `city-item item-${c.id}`)
-                    .html(`<span>${c.city}</span><small style="opacity:0.5">➔</small>`)
-                    .on("mouseover", (event) => {
-                        const [x, y] = projection([c.lon, c.lat]);
-                        svg.select(`.dot-${c.id}`).classed("highlight", true);
-                        const mapRect = mapArea.node().getBoundingClientRect();
-                        showDetail({pageX: mapRect.left + x, pageY: mapRect.top + y}, c);
-                    })
-                    .on("mouseout", () => {
-                        svg.selectAll(".dot").classed("highlight", false);
-                        hideDetail();
-                    })
-                    .on("click", () => window.open(c.group, '_blank'));
-            });
+                    item.append("div").attr("class", "city-name").html(`${c.city} <span>↗</span>`);
+                    item.append("div").attr("class", "city-details").text(`Organizers: ${c.organizers}`);
+                });
+            }
 
             function showDetail(event, d) {
                 tooltip.transition().duration(100).style("opacity", 1);
-                tooltip.html(`${d.city}<br><span style="font-weight:normal; font-size:11px">${d.organizers}</span>`)
-                    .style("left", (event.pageX + 20) + "px")
-                    .style("top", (event.pageY - 20) + "px");
+                tooltip.html(`<strong>${d.city.toUpperCase()}</strong><br/>${d.organizers}`)
+                    .style("left", (event.pageX + 25) + "px")
+                    .style("top", (event.pageY - 25) + "px");
             }
-
             function hideDetail() {
                 tooltip.transition().duration(300).style("opacity", 0);
             }
         });
     });
-}).catch(err => {
-    console.error("Error loading JSON. Ensure 'location.json' is in the same folder and you are running via a local server.", err);
 });
 </script>
 <script src="map-app.js"></script>

@@ -13,6 +13,21 @@
     cursor: pointer;
 }
 .add-event-button:hover { background: #007bb6; transform: translateY(-1px); }
+.find-nearby-button { position: fixed; top: 16px; left: 18px; z-index: 2100; border: 2px solid #006191; border-radius: 999px; padding: 11px 17px; background: #fff; color: #004a70; font: 700 .92rem/1.2 Inter, 'Segoe UI', sans-serif; box-shadow: 0 8px 24px rgba(0, 0, 0, .16); cursor: pointer; }
+.find-nearby-button:hover { background: #e8f6ff; transform: translateY(-1px); }
+.find-nearby-button:disabled { opacity: .7; cursor: wait; }
+.nearby-content { gap: 12px; }
+.nearby-message { margin: 0; color: #191c1e; font-size: 1.05rem; line-height: 1.6; }
+.nearby-detail { margin: 0; color: #475e8f; font-size: .92rem; }
+.nearby-results { display: grid; gap: 8px; margin: 0; padding-left: 1.6rem; }
+.nearby-results li { padding-left: 4px; color: #191c1e; }
+.nearby-results li::marker { color: #006191; font-weight: 800; }
+.nearby-result-action { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.nearby-item-view { border: 1px solid #006191; border-radius: 6px; padding: 4px 9px; background: white; color: #004a70; font: 700 .78rem Inter, 'Segoe UI', sans-serif; cursor: pointer; }
+.nearby-item-view:hover { background: #e8f6ff; }
+.nearby-hint { margin: 0; padding: 12px; border-left: 4px solid #ffd700; background: #fff9d6; color: #343434; font-size: .92rem; line-height: 1.5; }
+.nearby-dialog .event-form-actions { flex-wrap: wrap; }
+.country-tile { scroll-margin-top: 112px; }
 .event-entry-actions, .directory-event-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
 .country-flag { display: inline-block; font-size: 1.2em; line-height: 1; }
 .country-btn-label { display: inline-flex; align-items: center; justify-content: center; gap: 9px; }
@@ -46,9 +61,9 @@
 .country-tile-scrollable > .map-area { position: sticky; top: 16px; align-self: flex-start; height: calc(100vh - 32px); max-height: calc(100vh - 32px); min-height: 320px; flex: 1.4 1 0; }
 .country-tile-scrollable > .map-area svg { display: block; width: 100%; height: 100%; }
 .country-tile-scrollable > .side-panel { position: sticky; top: 16px; align-self: flex-start; height: calc(100vh - 32px); max-height: calc(100vh - 32px); overflow: hidden; box-sizing: border-box; }
-.country-tile-scrollable > .side-panel > .city-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: auto; padding-block: max(15px, calc((100vh - 32px) / 2 - 45px)); }
+.country-tile-scrollable > .side-panel > .city-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: auto; padding: 15px; }
 .has-map-nav .country-tile-scrollable > .map-area, .has-map-nav .country-tile-scrollable > .side-panel { top: 96px; height: calc(100vh - 112px); max-height: calc(100vh - 112px); }
-.has-map-nav .country-tile-scrollable > .side-panel > .city-list { padding-block: max(15px, calc((100vh - 112px) / 2 - 45px)); }
+.has-map-nav .country-tile-scrollable > .side-panel > .city-list { padding: 15px; }
 @media (max-width: 760px) {
     .country-tile.country-tile-scrollable { overflow: hidden !important; align-items: stretch; }
     .country-tile-scrollable > .map-area, .has-map-nav .country-tile-scrollable > .map-area { position: relative; top: auto; height: 52vh; max-height: 52vh; min-height: 260px; flex: 1 1 100%; }
@@ -88,5 +103,6 @@
 .directory-event-card .directory-event-actions { flex-wrap: wrap; }
 @media (max-width: 600px) {
     .add-event-button { top: 10px; right: 10px; padding: 10px 13px; font-size: .82rem; }
+    .find-nearby-button { top: 10px; left: 10px; max-width: calc(100vw - 175px); padding: 10px 12px; font-size: .76rem; }
     .event-form { padding: 20px; }
 }

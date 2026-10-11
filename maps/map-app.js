@@ -3,6 +3,8 @@
     const TEMPLATE_KEY = "_emptyTemplate";
     let locations = null;
     let modal;
+    let nearbyDialog;
+    let nearbyTarget = null;
 
     const isRecord = value => value && typeof value === "object" && !Array.isArray(value);
     const countryEntries = data => Object.entries(data).filter(([country, cities]) =>
@@ -67,6 +69,10 @@
     function centerLinkedEvent(tile, eventIndex) {
         const eventCard = tile.querySelector(`.city-item[data-event-index="${eventIndex}"]`);
         if (!eventCard) return;
+        if (window.innerWidth <= 760) {
+            eventCard.scrollIntoView({ behavior: "instant", block: "center" });
+            return;
+        }
         const list = eventCard.closest(".city-list");
         if (!list || !tile.classList.contains("country-tile-scrollable")) return;
         const listBounds = list.getBoundingClientRect();
@@ -94,6 +100,10 @@
         button.id = "addEventButton";
         document.body.prepend(button);
 
+        const nearbyButton = makeButton("Find a location close to you", "find-nearby-button", () => findNearby(nearbyButton), "Use your location to find a SAP Stammtisch within 100 km");
+        nearbyButton.id = "findNearbyButton";
+        document.body.prepend(nearbyButton);
+
         modal = document.createElement("dialog");
         modal.className = "event-dialog";
         modal.setAttribute("aria-labelledby", "eventDialogTitle");
@@ -119,6 +129,146 @@
         modal.querySelector(".dialog-close").addEventListener("click", () => modal.close());
         modal.querySelector(".dialog-cancel").addEventListener("click", () => modal.close());
         modal.querySelector("form").addEventListener("submit", submitForm);
+
+        nearbyDialog = document.createElement("dialog");
+        nearbyDialog.className = "event-dialog nearby-dialog";
+        nearbyDialog.setAttribute("aria-labelledby", "nearbyDialogTitle");
+        nearbyDialog.innerHTML = `
+            <div class="event-form nearby-content">
+                <div class="event-dialog-heading">
+                    <div><p class="event-eyebrow">SAP Stammtisch finder</p><h2 id="nearbyDialogTitle">Locations near you</h2></div>
+                    <button class="dialog-close" type="button" aria-label="Close">×</button>
+                </div>
+                <p class="nearby-message" role="status" aria-live="polite"></p>
+                <p class="nearby-detail"></p>
+                <ol class="nearby-results"></ol>
+                <p class="nearby-hint" hidden></p>
+                <div class="event-form-actions">
+                    <button class="dialog-cancel" type="button">Close</button>
+                    <button class="dialog-submit nearby-view" type="button" hidden>Show closest</button>
+                    <button class="dialog-submit nearby-add" type="button" hidden>Add a new event</button>
+                </div>
+            </div>`;
+        document.body.append(nearbyDialog);
+        nearbyDialog.querySelector(".dialog-close").addEventListener("click", () => nearbyDialog.close());
+        nearbyDialog.querySelector(".dialog-cancel").addEventListener("click", () => nearbyDialog.close());
+        nearbyDialog.querySelector(".nearby-view").addEventListener("click", showNearbyTarget);
+        nearbyDialog.querySelector(".nearby-add").addEventListener("click", () => {
+            nearbyDialog.close();
+            openForm();
+        });
+    }
+
+    function distanceInKm(originLat, originLon, targetLat, targetLon) {
+        const radians = degrees => degrees * Math.PI / 180;
+        const latDelta = radians(targetLat - originLat);
+        const lonDelta = radians(targetLon - originLon);
+        const value = Math.sin(latDelta / 2) ** 2 +
+            Math.cos(radians(originLat)) * Math.cos(radians(targetLat)) * Math.sin(lonDelta / 2) ** 2;
+        return 6371 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+    }
+
+    function showNearbyMessage(message, detail = "", { showView = false, showAdd = false, results = [], hint = "" } = {}) {
+        nearbyTarget = showView ? nearbyTarget : null;
+        nearbyDialog.querySelector("#nearbyDialogTitle").textContent = showView ? "SAP Stammtische nearby" : "Locations near you";
+        nearbyDialog.querySelector(".nearby-message").textContent = message;
+        nearbyDialog.querySelector(".nearby-detail").textContent = detail;
+        nearbyDialog.querySelector(".nearby-view").hidden = !showView;
+        nearbyDialog.querySelector(".nearby-add").hidden = !showAdd;
+        const resultList = nearbyDialog.querySelector(".nearby-results");
+        resultList.replaceChildren();
+        resultList.hidden = !results.length;
+        results.forEach((entry, index) => {
+            const item = document.createElement("li");
+            item.className = "nearby-result";
+            const label = document.createElement("span");
+            const distance = entry.distance < 10 ? entry.distance.toFixed(1) : Math.round(entry.distance);
+            label.textContent = `${entry.city}, ${entry.country} — ${distance} km`;
+            item.append(label);
+            if (index > 0) {
+                item.classList.add("nearby-result-action");
+                const viewButton = makeButton("Show", "nearby-item-view", () => showNearbyTarget(entry));
+                viewButton.setAttribute("aria-label", `Show ${entry.city}, ${entry.country}`);
+                item.append(viewButton);
+            }
+            resultList.append(item);
+        });
+        const hintElement = nearbyDialog.querySelector(".nearby-hint");
+        hintElement.textContent = hint;
+        hintElement.hidden = !hint;
+        if (!nearbyDialog.open) nearbyDialog.showModal();
+    }
+
+    function formatCoordinates(latitude, longitude) {
+        const latDirection = latitude < 0 ? "S" : "N";
+        const lonDirection = longitude < 0 ? "W" : "E";
+        return `${Math.abs(latitude).toFixed(4)}° ${latDirection}, ${Math.abs(longitude).toFixed(4)}° ${lonDirection}`;
+    }
+
+    function findNearby(button) {
+        if (!navigator.geolocation) {
+            showNearbyMessage("Your browser does not support location sharing.", "Please use a browser with GPS/location access enabled.");
+            return;
+        }
+        if (!locations) {
+            showNearbyMessage("Locations are still loading.", "Please try again in a moment.");
+            return;
+        }
+        button.disabled = true;
+        button.textContent = "Finding nearby locations…";
+        navigator.geolocation.getCurrentPosition(position => {
+            button.disabled = false;
+            button.textContent = "Find a location close to you";
+            const { latitude, longitude } = position.coords;
+            const nearestLocations = eventEntries(locations)
+                .map(entry => ({
+                    ...entry,
+                    distance: distanceInKm(latitude, longitude, Number(entry.event.lat), Number(entry.event.lon))
+                }))
+                .filter(entry => entry.distance <= 100)
+                .sort((first, second) => first.distance - second.distance)
+                .slice(0, 3);
+            const detectedLocation = formatCoordinates(latitude, longitude);
+
+            if (!nearestLocations.length) {
+                showNearbyMessage(
+                    "There is currently no known SAP Stammtisch next to you. How about starting one on your own? Let the community grow and be an active part.",
+                    `Your detected location: ${detectedLocation}. No listed location was found within 100 km.`,
+                    { showAdd: true, hint: "If these are too far away, think about starting a new one next to you...." }
+                );
+                return;
+            }
+
+            nearbyTarget = nearestLocations[0];
+            showNearbyMessage(
+                `Your detected location: ${detectedLocation}.`,
+                "Closest SAP Stammtische within 100 km:",
+                { showView: true, showAdd: true, results: nearestLocations, hint: "If these are too far away, think about starting a new one next to you...." }
+            );
+        }, error => {
+            button.disabled = false;
+            button.textContent = "Find a location close to you";
+            const message = error.code === error.PERMISSION_DENIED
+                ? "Location access was denied. Please allow location access in your browser settings and try again."
+                : error.code === error.POSITION_UNAVAILABLE
+                    ? "Your current location is unavailable. Please try again later."
+                    : "The location request timed out. Please try again.";
+            showNearbyMessage(message);
+        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+    }
+
+    function showNearbyTarget(target = nearbyTarget) {
+        if (!target) return;
+        const { country, city } = target;
+        nearbyDialog.close();
+        const tile = document.getElementById(`tile-${CSS.escape(country)}`);
+        const eventCard = tile?.querySelectorAll(".city-item");
+        const eventIndex = eventCard ? [...eventCard].findIndex(card => card.querySelector(".city-name > span")?.textContent === city) : -1;
+        if (!tile || eventIndex < 0) return;
+        tile.scrollIntoView({ behavior: "instant", block: "start" });
+        tile.querySelectorAll(".is-linked-active").forEach(element => element.classList.remove("is-linked-active"));
+        setLinkedHighlight(tile, eventIndex, true);
+        requestAnimationFrame(() => centerLinkedEvent(tile, eventIndex));
     }
 
     function openForm(entry) {
