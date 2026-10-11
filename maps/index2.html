@@ -1,1 +1,275 @@
-<!DOCTYPE html><html lang="en"><head>    <meta charset="UTF-8">    <title>SAP Stammtisch | Community Map</title>    <script src="https://d3js.org/d3.v7.min.js"></script>    <script src="https://unpkg.com/topojson@3"></script>    <style>        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;700&display=swap');        :root {            --sap-yellow: #FFD700;            --sap-black: #000000;            --off-white: #FBFBFB;            --map-gray: #EAEAEA;            --text-gray: #444;        }        body {             font-family: 'Inter', sans-serif;             background-color: var(--off-white);             color: var(--sap-black);            margin: 0; padding-bottom: 100px;        }        /* --- Header & Intro --- */        header {             padding: 80px 20px 40px;             text-align: center;             background: linear-gradient(180deg, #fff 0%, var(--off-white) 100%);        }        h1 {             font-family: 'Space Grotesk', sans-serif;            font-size: 4rem;             font-weight: 700;            margin: 0;             text-transform: uppercase;            letter-spacing: -2px;            line-height: 0.9;        }        .highlight-yellow {            background: var(--sap-yellow);            padding: 0 15px;            display: inline-block;        }        .intro-container {            max-width: 800px;            margin: 40px auto;            text-align: left;            border-left: 5px solid var(--sap-black);            padding: 10px 40px;            background: white;            box-shadow: 15px 15px 0px var(--sap-yellow);        }        .intro-container p {            font-size: 1.1rem;            line-height: 1.7;            color: var(--text-gray);        }        /* --- Dashboard Layout --- */        .dashboard {             display: flex; flex-direction: column; gap: 80px;             padding: 40px; max-width: 1200px; margin: auto;         }        .country-tile {             display: flex;             background: white;            border: 2px solid var(--sap-black);            box-shadow: 20px 20px 0px rgba(0,0,0,0.05);            border-radius: 4px;            overflow: hidden;        }        .map-area {             flex: 1.4;             position: relative;             background-color: #fff;            background-image: radial-gradient(var(--map-gray) 1px, transparent 0);            background-size: 20px 20px; /* Dot grid pattern */        }                .side-panel {             flex: 1;             background: var(--sap-black);             color: white;            display: flex; flex-direction: column;        }        .panel-header {            padding: 30px;            font-family: 'Space Grotesk', sans-serif;            font-weight: 700;            font-size: 1.5rem;            background: var(--sap-yellow);            color: var(--sap-black);            display: flex;            justify-content: space-between;            align-items: center;        }        .city-list { padding: 20px; }        .city-item {             padding: 18px 25px;             margin-bottom: 8px;            font-size: 1.1rem;             font-weight: 500;            cursor: pointer;             border: 1px solid #333;            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);            display: flex;            justify-content: space-between;        }        .city-item:hover {             background: var(--sap-yellow);             color: var(--sap-black);            transform: translateX(10px);            border-color: var(--sap-yellow);        }        /* --- Map Assets --- */        .land {             fill: #f0f0f0;             stroke: var(--sap-black);             stroke-width: 1.5px;         }        .dot {             fill: var(--sap-yellow);             stroke: var(--sap-black);             stroke-width: 2px;             transition: all 0.4s ease;        }        .dot.highlight {             r: 15;             fill: #fff;            stroke-width: 4px;        }        .tooltip {             position: absolute;             padding: 15px 20px;             background: var(--sap-black);             color: white;             border-radius: 0px;             pointer-events: none;             font-size: 14px;             z-index: 1000;            border-bottom: 4px solid var(--sap-yellow);            box-shadow: 10px 10px 20px rgba(0,0,0,0.2);        }        /* Filter for Land Shadow */        .svg-shadow { filter: drop-shadow(15px 15px 0px rgba(0,0,0,0.08)); }        .country-title-bg {            font-family: 'Space Grotesk', sans-serif;            font-weight: 700;            font-size: 5rem;            color: rgba(0,0,0,0.03);            position: absolute;            top: 20px;            left: 20px;            pointer-events: none;            text-transform: uppercase;        }    </style></head><body><header>    <h1>SAP <span class="highlight-yellow">Stammtisch</span></h1>    <div class="intro-container">        <p>            An <strong>SAP Stammtisch</strong> is the grassroot heartbeat of the ecosystem. It's a community-led meetup where professionals, developers, and enthusiasts trade formal conference halls for the warmth of a local "regulars' table." No agendas, no sales pitches—just pure knowledge sharing and networking over a drink.        </p>    </div></header><div id="container" class="dashboard"></div><script>const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);d3.json("location.json").then(data => {    const countryGroups = d3.group(data, d => d.country);    d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(world => {                countryGroups.forEach((cities, countryName) => {            const sorted = [...cities].sort((a,b) => b.lat - a.lat);            const dynamicHeight = Math.max(600, (sorted.length * 75) + 100);            const tile = d3.select("#container").append("div")                .attr("class", "country-tile")                .style("height", dynamicHeight + "px");            const mapArea = tile.append("div").attr("class", "map-area");            mapArea.append("div").attr("class", "country-title-bg").text(countryName);            const sidePanel = tile.append("div").attr("class", "side-panel");            sidePanel.append("div").attr("class", "panel-header")                .html(`<span>${countryName}</span> <span>↘</span>`);            const listContainer = sidePanel.append("div").attr("class", "city-list");            // SVG Map Setup            const width = 600, height = dynamicHeight;            const svg = mapArea.append("svg")                .attr("viewBox", `0 0 ${width} ${height}`)                .style("width", "100%").style("height", "100%");                        const geo = topojson.feature(world, world.objects.countries).features.find(d => d.properties.name === countryName);            const projection = d3.geoMercator().fitSize([width - 100, height - 100], geo);            const path = d3.geoPath().projection(projection);            // Draw Land            svg.append("path").datum(geo).attr("class", "land svg-shadow").attr("d", path);            // Render Dots            svg.selectAll(".dot")                .data(cities).enter().append("circle")                .attr("class", d => `dot dot-${d.id}`)                .attr("cx", d => projection([d.lon, d.lat])[0])                .attr("cy", d => projection([d.lon, d.lat])[1])                .attr("r", 10)                .on("mouseover", (event, d) => showDetail(event, d))                .on("mouseout", hideDetail);            // Render Side Panel List            sorted.forEach(c => {                listContainer.append("div")                    .attr("class", `city-item item-${c.id}`)                    .html(`<span>${c.city}</span> <span style="font-size:0.8rem">VIEW MAP</span>`)                    .on("mouseover", (event) => {                        const [x, y] = projection([c.lon, c.lat]);                        svg.select(`.dot-${c.id}`).classed("highlight", true);                        const mapRect = mapArea.node().getBoundingClientRect();                        showDetail({pageX: mapRect.left + x, pageY: mapRect.top + y}, c);                    })                    .on("mouseout", () => {                        svg.selectAll(".dot").classed("highlight", false);                        hideDetail();                    })                    .on("click", () => window.open(c.group, '_blank'));            });            function showDetail(event, d) {                tooltip.transition().duration(100).style("opacity", 1);                tooltip.html(`<div style="color:var(--sap-yellow); margin-bottom:5px;">LOCATION</div>                              <div style="font-size:18px; margin-bottom:10px;">${d.city.toUpperCase()}</div>                              <div style="font-weight:400; opacity:0.8">Organizer: ${d.organizers}</div>`)                    .style("left", (event.pageX + 25) + "px")                    .style("top", (event.pageY - 25) + "px");            }            function hideDetail() {                tooltip.transition().duration(300).style("opacity", 0);            }        });    });});</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAP Stammtisch | Community Map</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson@3"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;700&display=swap');
+
+        :root {
+            --sap-yellow: #FFD700;
+            --sap-black: #000000;
+            --off-white: #FBFBFB;
+            --map-gray: #EAEAEA;
+            --text-gray: #444;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--off-white); 
+            color: var(--sap-black);
+            margin: 0; padding-bottom: 100px;
+        }
+
+        /* --- Header & Intro --- */
+        header { 
+            padding: 80px 20px 40px; 
+            text-align: center; 
+            background: linear-gradient(180deg, #fff 0%, var(--off-white) 100%);
+        }
+
+        h1 { 
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 4rem; 
+            font-weight: 700;
+            margin: 0; 
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            line-height: 0.9;
+        }
+
+        .highlight-yellow {
+            background: var(--sap-yellow);
+            padding: 0 15px;
+            display: inline-block;
+        }
+
+        .intro-container {
+            max-width: 800px;
+            margin: 40px auto;
+            text-align: left;
+            border-left: 5px solid var(--sap-black);
+            padding: 10px 40px;
+            background: white;
+            box-shadow: 15px 15px 0px var(--sap-yellow);
+        }
+
+        .intro-container p {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            color: var(--text-gray);
+        }
+
+        /* --- Dashboard Layout --- */
+        .dashboard { 
+            display: flex; flex-direction: column; gap: 80px; 
+            padding: 40px; max-width: 1200px; margin: auto; 
+        }
+
+        .country-tile { 
+            display: flex; 
+            background: white;
+            border: 2px solid var(--sap-black);
+            box-shadow: 20px 20px 0px rgba(0,0,0,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .map-area { 
+            flex: 1.4; 
+            position: relative; 
+            background-color: #fff;
+            background-image: radial-gradient(var(--map-gray) 1px, transparent 0);
+            background-size: 20px 20px; /* Dot grid pattern */
+        }
+        
+        .side-panel { 
+            flex: 1; 
+            background: var(--sap-black); 
+            color: white;
+            display: flex; flex-direction: column;
+        }
+
+        .panel-header {
+            padding: 30px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            background: var(--sap-yellow);
+            color: var(--sap-black);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .city-list { padding: 20px; }
+
+        .city-item { 
+            padding: 18px 25px; 
+            margin-bottom: 8px;
+            font-size: 1.1rem; 
+            font-weight: 500;
+            cursor: pointer; 
+            border: 1px solid #333;
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .city-item:hover { 
+            background: var(--sap-yellow); 
+            color: var(--sap-black);
+            transform: translateX(10px);
+            border-color: var(--sap-yellow);
+        }
+
+        /* --- Map Assets --- */
+        .land { 
+            fill: #f0f0f0; 
+            stroke: var(--sap-black); 
+            stroke-width: 1.5px; 
+        }
+
+        .dot { 
+            fill: var(--sap-yellow); 
+            stroke: var(--sap-black); 
+            stroke-width: 2px; 
+            transition: all 0.4s ease;
+        }
+
+        .dot.highlight { 
+            r: 15; 
+            fill: #fff;
+            stroke-width: 4px;
+        }
+
+        .tooltip { 
+            position: absolute; 
+            padding: 15px 20px; 
+            background: var(--sap-black); 
+            color: white; 
+            border-radius: 0px; 
+            pointer-events: none; 
+            font-size: 14px; 
+            z-index: 1000;
+            border-bottom: 4px solid var(--sap-yellow);
+            box-shadow: 10px 10px 20px rgba(0,0,0,0.2);
+        }
+
+        /* Filter for Land Shadow */
+        .svg-shadow { filter: drop-shadow(15px 15px 0px rgba(0,0,0,0.08)); }
+
+        .country-title-bg {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 5rem;
+            color: rgba(0,0,0,0.03);
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>SAP <span class="highlight-yellow">Stammtisch</span></h1>
+    <div class="intro-container">
+        <p>
+            An <strong>SAP Stammtisch</strong> is the grassroot heartbeat of the ecosystem. It's a community-led meetup where professionals, developers, and enthusiasts trade formal conference halls for the warmth of a local "regulars' table." No agendas, no sales pitches—just pure knowledge sharing and networking over a drink.
+        </p>
+    </div>
+</header>
+
+<div id="container" class="dashboard"></div>
+
+<script type="text/plain">
+const tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0);
+
+d3.json("location.json").then(data => {
+    const countryGroups = d3.group(data, d => d.country);
+
+    d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(world => {
+        
+        countryGroups.forEach((cities, countryName) => {
+            const sorted = [...cities].sort((a,b) => b.lat - a.lat);
+            const dynamicHeight = Math.max(600, (sorted.length * 75) + 100);
+
+            const tile = d3.select("#container").append("div")
+                .attr("class", "country-tile")
+                .style("height", dynamicHeight + "px");
+
+            const mapArea = tile.append("div").attr("class", "map-area");
+            mapArea.append("div").attr("class", "country-title-bg").text(countryName);
+
+            const sidePanel = tile.append("div").attr("class", "side-panel");
+
+            sidePanel.append("div").attr("class", "panel-header")
+                .html(`<span>${countryName}</span> <span>↘</span>`);
+
+            const listContainer = sidePanel.append("div").attr("class", "city-list");
+
+            // SVG Map Setup
+            const width = 600, height = dynamicHeight;
+            const svg = mapArea.append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .style("width", "100%").style("height", "100%");
+            
+            const geo = topojson.feature(world, world.objects.countries).features.find(d => d.properties.name === countryName);
+            const projection = d3.geoMercator().fitSize([width - 100, height - 100], geo);
+            const path = d3.geoPath().projection(projection);
+
+            // Draw Land
+            svg.append("path").datum(geo).attr("class", "land svg-shadow").attr("d", path);
+
+            // Render Dots
+            svg.selectAll(".dot")
+                .data(cities).enter().append("circle")
+                .attr("class", d => `dot dot-${d.id}`)
+                .attr("cx", d => projection([d.lon, d.lat])[0])
+                .attr("cy", d => projection([d.lon, d.lat])[1])
+                .attr("r", 10)
+                .on("mouseover", (event, d) => showDetail(event, d))
+                .on("mouseout", hideDetail);
+
+            // Render Side Panel List
+            sorted.forEach(c => {
+                listContainer.append("div")
+                    .attr("class", `city-item item-${c.id}`)
+                    .html(`<span>${c.city}</span> <span style="font-size:0.8rem">VIEW MAP</span>`)
+                    .on("mouseover", (event) => {
+                        const [x, y] = projection([c.lon, c.lat]);
+                        svg.select(`.dot-${c.id}`).classed("highlight", true);
+                        const mapRect = mapArea.node().getBoundingClientRect();
+                        showDetail({pageX: mapRect.left + x, pageY: mapRect.top + y}, c);
+                    })
+                    .on("mouseout", () => {
+                        svg.selectAll(".dot").classed("highlight", false);
+                        hideDetail();
+                    })
+                    .on("click", () => window.open(c.group, '_blank'));
+            });
+
+            function showDetail(event, d) {
+                tooltip.transition().duration(100).style("opacity", 1);
+                tooltip.html(`<div style="color:var(--sap-yellow); margin-bottom:5px;">LOCATION</div>
+                              <div style="font-size:18px; margin-bottom:10px;">${d.city.toUpperCase()}</div>
+                              <div style="font-weight:400; opacity:0.8">Organizer: ${d.organizers}</div>`)
+                    .style("left", (event.pageX + 25) + "px")
+                    .style("top", (event.pageY - 25) + "px");
+            }
+
+            function hideDetail() {
+                tooltip.transition().duration(300).style("opacity", 0);
+            }
+        });
+    });
+});
+</script>
+<script src="map-app.js"></script>
+</body>
+</html>

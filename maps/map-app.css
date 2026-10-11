@@ -1,0 +1,92 @@
+.add-event-button {
+    position: fixed;
+    top: 16px;
+    right: 18px;
+    z-index: 2100;
+    border: 0;
+    border-radius: 999px;
+    padding: 13px 20px;
+    background: #006191;
+    color: #fff;
+    font: 700 0.95rem/1.2 Inter, 'Segoe UI', sans-serif;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .2);
+    cursor: pointer;
+}
+.add-event-button:hover { background: #007bb6; transform: translateY(-1px); }
+.event-entry-actions, .directory-event-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.country-flag { display: inline-block; font-size: 1.2em; line-height: 1; }
+.country-btn-label { display: inline-flex; align-items: center; justify-content: center; gap: 9px; }
+.panel-header .country-flag { margin-right: 10px; }
+.city-name { align-items: center; gap: 10px; }
+.city-name .event-group-link { margin-left: auto; white-space: nowrap; }
+.event-group-link { color: #66c9ff; font-size: .72rem; font-weight: 600; text-decoration: none; }
+.event-group-link:hover { color: #ffd700; text-decoration: underline; }
+.city-item.is-linked-active { outline: 3px solid #ffd700; outline-offset: -3px; background: rgba(255, 215, 0, .12); }
+.dot.is-linked-active { r: 15; fill: #fff; stroke: #006191; stroke-width: 4px; filter: drop-shadow(0 0 8px #ffd700); }
+.dot:focus { outline: none; r: 15; stroke: #006191; stroke-width: 4px; }
+.directory-event-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; }
+.directory-event-title h3 { margin: 0; }
+.directory-event-title .event-group-link { color: #006191; }
+.directory-event-title .event-group-link:hover { color: #007bb6; }
+.city-item { padding: 11px 14px; margin-bottom: 6px; gap: 3px; border-radius: 6px; transition: background-color .15s ease, outline-color .15s ease, box-shadow .15s ease; }
+.city-item:hover, .city-item.is-linked-active { color: #171717 !important; background: #ffe45c !important; outline: 3px solid #171717; outline-offset: 1px; box-shadow: 0 4px 14px rgba(0, 0, 0, .22); transform: translateX(4px); }
+.city-item:hover .city-name, .city-item:hover .city-details, .city-item.is-linked-active .city-name, .city-item.is-linked-active .city-details { color: #171717 !important; }
+.city-name { font-size: 1rem; line-height: 1.3; }
+.city-name .event-group-link { color: #004a70; font-size: .7rem; font-weight: 800; text-decoration: underline; }
+.city-name .event-group-link:hover { color: #111; }
+.organizer-row { display: flex; align-items: center; gap: 8px; font-size: .78rem; line-height: 1.35; color: #555; }
+.event-change-inline { flex: 0 0 auto; padding: 3px 7px; border: 1px solid #555; border-radius: 4px; background: #fff; color: #222; font-size: .68rem; line-height: 1.2; white-space: nowrap; }
+.city-item:hover .event-change-inline, .city-item.is-linked-active .event-change-inline { border-color: #171717; background: #171717; color: #fff; }
+.city-remarks { font-size: .74rem; line-height: 1.3; }
+.directory-event-card { padding: 18px; }
+.directory-event-card p { margin: 6px 0; }
+.directory-organizer-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: .85rem; line-height: 1.4; }
+.directory-organizer-row .event-change-inline { font-size: .68rem; }
+.country-tile.country-tile-scrollable { overflow: visible !important; align-items: flex-start; }
+.country-tile-scrollable > .map-area { position: sticky; top: 16px; align-self: flex-start; height: calc(100vh - 32px); max-height: calc(100vh - 32px); min-height: 320px; flex: 1.4 1 0; }
+.country-tile-scrollable > .map-area svg { display: block; width: 100%; height: 100%; }
+.country-tile-scrollable > .side-panel { position: sticky; top: 16px; align-self: flex-start; height: calc(100vh - 32px); max-height: calc(100vh - 32px); overflow: hidden; box-sizing: border-box; }
+.country-tile-scrollable > .side-panel > .city-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: auto; padding-block: max(15px, calc((100vh - 32px) / 2 - 45px)); }
+.has-map-nav .country-tile-scrollable > .map-area, .has-map-nav .country-tile-scrollable > .side-panel { top: 96px; height: calc(100vh - 112px); max-height: calc(100vh - 112px); }
+.has-map-nav .country-tile-scrollable > .side-panel > .city-list { padding-block: max(15px, calc((100vh - 112px) / 2 - 45px)); }
+@media (max-width: 760px) {
+    .country-tile.country-tile-scrollable { overflow: hidden !important; align-items: stretch; }
+    .country-tile-scrollable > .map-area, .has-map-nav .country-tile-scrollable > .map-area { position: relative; top: auto; height: 52vh; max-height: 52vh; min-height: 260px; flex: 1 1 100%; }
+    .country-tile-scrollable > .side-panel, .has-map-nav .country-tile-scrollable > .side-panel { position: relative; top: auto; height: auto; max-height: none; overflow: visible; }
+    .country-tile-scrollable > .side-panel > .city-list { overflow: visible; padding-block: 15px; }
+}
+.event-group-link, .directory-event-actions a { color: inherit; font-size: .88rem; font-weight: 700; text-decoration: underline; }
+.event-change-button { border: 1px solid currentColor; border-radius: 6px; padding: 7px 11px; background: transparent; color: inherit; font: 700 .88rem Inter, 'Segoe UI', sans-serif; cursor: pointer; }
+.event-change-button:hover { background: #ffd700; color: #111; }
+.event-change-icon { min-width: 40px; font-size: 1.25rem; }
+.city-remarks { margin-top: 5px; white-space: pre-wrap; }
+.map-fallback { display: grid; place-items: center; min-height: 360px; color: #006191; font-size: 2rem; font-weight: 800; }
+.map-load-error { margin: 2rem auto; max-width: 900px; padding: 1rem; color: #842029; background: #f8d7da; }
+.event-dialog { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0; border: 0; border-radius: 18px; color: #191c1e; box-shadow: 0 24px 80px rgba(0, 0, 0, .3); }
+.event-dialog::backdrop { background: rgba(10, 20, 30, .58); backdrop-filter: blur(3px); }
+.event-form { display: grid; gap: 15px; padding: 26px; font: 400 15px/1.5 Inter, 'Segoe UI', sans-serif; }
+.event-dialog-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.event-dialog h2 { margin: 0; font-size: 1.7rem; }
+.event-eyebrow { margin: 0 0 4px; color: #006191; font-size: .75rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.dialog-close { border: 0; background: transparent; color: #59636b; font-size: 2rem; line-height: 1; cursor: pointer; }
+.event-form-note { margin: 0; color: #59636b; font-size: .9rem; }
+.event-form label { display: grid; gap: 6px; font-weight: 700; }
+.event-form input, .event-form textarea { box-sizing: border-box; width: 100%; border: 1px solid #bec7d2; border-radius: 8px; padding: 11px 12px; color: #191c1e; background: #fff; font: inherit; }
+.event-form input:focus, .event-form textarea:focus { outline: 3px solid rgba(0, 97, 145, .2); border-color: #006191; }
+.event-form textarea { resize: vertical; }
+.geocode-status { min-height: 1.3em; margin: 0; color: #475e8f; font-size: .88rem; }
+.geocode-error { color: #ba1a1a; }
+.event-form-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
+.dialog-cancel, .dialog-submit { border: 0; border-radius: 8px; padding: 11px 16px; font: 700 .95rem Inter, 'Segoe UI', sans-serif; cursor: pointer; }
+.dialog-cancel { background: #edeef1; color: #191c1e; }
+.dialog-submit { background: #006191; color: #fff; }
+.dialog-submit:disabled { opacity: .6; cursor: wait; }
+.directory-event-card { padding: 28px; border-radius: 18px; background: #fff; box-shadow: 0 12px 32px -4px rgba(25, 28, 30, .08); }
+.directory-event-card h3 { margin: 0 0 8px; font-size: 1.5rem; }
+.directory-event-card p { line-height: 1.5; }
+.directory-event-card .directory-country { margin: 0; color: #006191; font-weight: 700; }
+.directory-event-card .directory-event-actions { flex-wrap: wrap; }
+@media (max-width: 600px) {
+    .add-event-button { top: 10px; right: 10px; padding: 10px 13px; font-size: .82rem; }
+    .event-form { padding: 20px; }
+}
